@@ -1,4 +1,4 @@
-use rand::seq::SliceRandom;
+use rand::{prelude::IteratorRandom, seq::SliceRandom};
 
 #[derive(Debug, Clone)]
 pub enum Tile {
@@ -43,42 +43,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(width: usize, height: usize, mines: usize, _seed: usize) -> Self {
-        // Assert mine count doesn't exceed the number of tiles.
-        assert!(mines <= width * height);
-
-        // Add all tiles where mines first reside in the front.
-        let mut tiles = Vec::with_capacity(width * height);
-        for _ in 0..mines {
-            tiles.push(Tile::Mine);
-        }
-        for _ in 0..(width * height - mines) {
-            tiles.push(Tile::Near(0));
-        }
-        // Shuffle mines around.
-        let rng = &mut rand::thread_rng();
-        tiles.shuffle(rng);
-
-        let board = Self { tiles, width };
-        let mut numbered = board.clone();
-
-        // Number tiles which are close to mines.
-        for (i, tile) in board.tiles.iter().enumerate() {
-            if tile.is_mine() {
-                let neighbors = board.tile_neighbors((i % board.width, i / board.width));
-                neighbors.into_iter().for_each(|xy| {
-                    // Unwrap as these coordinates are directly from enumeration.
-                    if let Tile::Near(val) = numbered.get_tile_mut(xy).unwrap() {
-                        *val += 1;
-                    }
-                });
-            }
-        }
-
-        numbered
-    }
-
-    pub fn new_choosing(width: usize, height: usize, mines: usize, _seed: usize) -> Self {
+    pub fn new(width: usize, height: usize, mines: usize, _seed: u64) -> Self {
         // Assert mine count doesn't exceed the number of tiles.
         assert!(mines <= width * height);
 
@@ -86,8 +51,8 @@ impl Board {
         let rng = &mut rand::thread_rng();
         let indexes = rand::seq::index::sample(rng, width * height, mines);
 
-        // Setup board with mines.
-        let mut board = Self {
+        // Setup empty sized board.
+        let empty_board = Self {
             tiles: {
                 let mut vec = Vec::new();
                 vec.resize(width * height, Tile::Near(0));
@@ -95,21 +60,21 @@ impl Board {
             },
             width,
         };
-        indexes.iter().for_each(|idx| board.tiles[idx] = Tile::Mine);
-
-        let mut numbered = board.clone();
-        // Number tiles which are close to mines.
-        for (i, tile) in board.tiles.iter().enumerate() {
-            if tile.is_mine() {
-                let neighbors = board.tile_neighbors((i % board.width, i / board.width));
-                neighbors.into_iter().for_each(|xy| {
-                    // Unwrap as these coordinates are directly from enumeration.
+        let mut numbered = empty_board.clone();
+        // Add mines and number tiles based on mine positions.
+        indexes.iter().for_each(|idx| {
+            numbered.tiles[idx] = Tile::Mine;
+            // Increment number of all non-mine neighbors.
+            empty_board
+                .tile_neighbors((idx % width, idx / width))
+                .for_each(|xy| {
+                    // Unwrap as these coordinates are directly from enumeration and
+                    // board and numbered are the same size.
                     if let Tile::Near(val) = numbered.get_tile_mut(xy).unwrap() {
                         *val += 1;
                     }
                 });
-            }
-        }
+        });
 
         numbered
     }
@@ -122,7 +87,7 @@ impl Board {
     pub fn tile_neighbors(&self, xy: (usize, usize)) -> impl Iterator<Item = (usize, usize)> + '_ {
         let (x, y) = (xy.0, xy.1);
 
-        // Use wrapping_sub to wrap around to usize::MAX on zero values which is always filtered out.
+        // Use wrapping_sub to wrap around to usize::MAX on zero values which are always filtered out.
         [
             (x.wrapping_sub(1), y.wrapping_sub(1)),
             (x, y.wrapping_sub(1)),

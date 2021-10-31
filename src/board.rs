@@ -1,5 +1,3 @@
-use rand::{prelude::IteratorRandom, seq::SliceRandom};
-
 #[derive(Debug, Clone)]
 pub enum Tile {
     // Tells the number of mines near the tile.

@@ -6,6 +6,7 @@ pub enum Tile {
 }
 
 impl Tile {
+    #[allow(dead_code)]
     pub fn is_mine(&self) -> bool {
         match self {
             Tile::Near(_) => false,
@@ -41,19 +42,24 @@ pub struct Board {
 }
 
 impl Board {
+    /// Generates a new board with the given width, height, mine count and seed.
+    ///
+    /// # Panics
+    /// If `mines` > `width` * `height`.
     pub fn new(width: usize, height: usize, mines: usize, _seed: u64) -> Self {
+        let size = width * height;
         // Assert mine count doesn't exceed the number of tiles.
-        assert!(mines <= width * height);
+        assert!(mines <= size);
 
         // Generate mine indexes.
         let rng = &mut rand::thread_rng();
-        let indexes = rand::seq::index::sample(rng, width * height, mines);
+        let indexes = rand::seq::index::sample(rng, size, mines);
 
         // Setup empty sized board.
         let empty_board = Self {
             tiles: {
                 let mut vec = Vec::new();
-                vec.resize(width * height, Tile::Near(0));
+                vec.resize(size, Tile::Near(0));
                 vec
             },
             width,
@@ -78,10 +84,12 @@ impl Board {
     }
 
     #[allow(dead_code)]
-    fn pos_iter(size: usize, width: usize) -> impl Iterator<Item = (usize, usize)> + 'static {
-        (0..size).map(move |i| (i % width, i / width))
+    fn pos_iter(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+        (0..self.tiles.len()).map(move |i| (i % self.width, i / self.width))
     }
 
+    /// Returns iterator over tile neighbor coordinates at the given coordinates.
+    /// Excludes coordinates outside the board boundaries.
     pub fn tile_neighbors(&self, xy: (usize, usize)) -> impl Iterator<Item = (usize, usize)> + '_ {
         let (x, y) = (xy.0, xy.1);
 

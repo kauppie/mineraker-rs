@@ -35,6 +35,14 @@ impl Default for Tile {
     }
 }
 
+/// [`Position`] stores 2-dimensional non-negative coordinates in uniform grid space,
+/// or xy-coordinates.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Position {
+    pub x: usize,
+    pub y: usize,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Board {
     tiles: Vec<Tile>,
@@ -87,51 +95,68 @@ impl Board {
     /// Returns the position of the given idx given the board coordinate mapping.
     /// Position is not valid if the idx is greater than or equal to size of the board.
     #[inline]
-    fn idx_to_pos(&self, idx: usize) -> (usize, usize) {
-        (idx % self.width, idx / self.width)
+    fn idx_to_pos(&self, idx: usize) -> Position {
+        Position {
+            x: idx % self.width,
+            y: idx / self.width,
+        }
     }
 
     /// Returns the index of the given position given the board coordinate mapping.
     /// Index is not be valid if it is outside the bounds of the board.
     #[inline]
-    fn pos_to_idx(&self, pos: (usize, usize)) -> usize {
-        pos.1 * self.width + pos.0
+    fn pos_to_idx(&self, pos: Position) -> usize {
+        pos.y * self.width + pos.x
     }
 
     /// Returns position iterator over all board coordinates.
     #[allow(dead_code)]
-    fn pos_iter(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
+    fn pos_iter(&self) -> impl Iterator<Item = Position> + '_ {
         (0..self.tiles.len()).map(move |idx| self.idx_to_pos(idx))
     }
 
     /// Returns iterator over tile neighbor coordinates at the given coordinates.
     /// Excludes coordinates outside the board boundaries.
-    pub fn tile_neighbors(&self, pos: (usize, usize)) -> impl Iterator<Item = (usize, usize)> + '_ {
-        let (x, y) = pos;
-
+    pub fn tile_neighbors(&self, pos: Position) -> impl Iterator<Item = Position> + '_ {
+        let (x, y) = (pos.x, pos.y);
         // Use wrapping_sub to wrap around to usize::MAX on zero values to always filter them out.
         [
-            (x.wrapping_sub(1), y.wrapping_sub(1)),
-            (x, y.wrapping_sub(1)),
-            (x + 1, y.wrapping_sub(1)),
-            (x.wrapping_sub(1), y),
-            (x + 1, y),
-            (x.wrapping_sub(1), y + 1),
-            (x, y + 1),
-            (x + 1, y + 1),
+            Position {
+                x: x.wrapping_sub(1),
+                y: y.wrapping_sub(1),
+            },
+            Position {
+                x,
+                y: y.wrapping_sub(1),
+            },
+            Position {
+                x: x + 1,
+                y: y.wrapping_sub(1),
+            },
+            Position {
+                x: x.wrapping_sub(1),
+                y,
+            },
+            Position { x: x + 1, y },
+            Position {
+                x: x.wrapping_sub(1),
+                y: y + 1,
+            },
+            Position { x, y: y + 1 },
+            Position { x: x + 1, y: y + 1 },
         ]
         .into_iter()
-        .filter(|(x, y)| *x < self.width && *y < self.height())
+        .filter(|pos| pos.x < self.width && pos.y < self.height())
     }
 
     #[inline]
-    pub fn get_tile_mut(&mut self, pos: (usize, usize)) -> Option<&mut Tile> {
+    pub fn get_tile_mut(&mut self, pos: Position) -> Option<&mut Tile> {
         let idx = self.pos_to_idx(pos);
         self.tiles.get_mut(idx)
     }
 
     #[inline]
-    pub fn get_tile(&self, pos: (usize, usize)) -> Option<&Tile> {
+    pub fn get_tile(&self, pos: Position) -> Option<&Tile> {
         let idx = self.pos_to_idx(pos);
         self.tiles.get(idx)
     }
@@ -152,7 +177,7 @@ impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for y in 0..self.height() {
             for x in 0..self.width {
-                write!(f, "{}", self.get_tile((x, y)).unwrap())?;
+                write!(f, "{}", self.get_tile(Position { x, y }).unwrap())?;
             }
             writeln!(f)?;
         }

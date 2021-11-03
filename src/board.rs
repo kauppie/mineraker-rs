@@ -43,6 +43,35 @@ pub struct Position {
     pub y: usize,
 }
 
+pub trait BoardGenSeeder {
+    fn to_u128(&self) -> u128;
+    fn from_u128(seed: u128) -> Self;
+    //fn from_str(bytes: &str) -> Self;
+}
+
+/// [`BoardSeed`] is a seed used for stable generation of a board.
+pub struct BoardSeed(u128);
+
+impl BoardGenSeeder for BoardSeed {
+    fn to_u128(&self) -> u128 {
+        self.0
+    }
+
+    fn from_u128(seed: u128) -> Self {
+        BoardSeed(seed)
+    }
+}
+
+/// [`GenerationConfig`] contains parameters for generating a [`Board`], including [`Seed`].
+/// Two boards with same config are exactly the same in content.
+pub struct GenerationConfig {
+    pub seed: BoardSeed,
+    pub width: usize,
+    pub height: usize,
+    pub mine_count: usize,
+    pub start_pos: Position,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Board {
     tiles: Vec<Tile>,
@@ -53,25 +82,24 @@ impl Board {
     /// Generates a new board with the given width, height, mine count and seed.
     ///
     /// # Panics
-    /// If `mines` > `width` * `height`.
-    pub fn new(width: usize, height: usize, mines: usize, _seed: u64) -> Self {
-        let size = width * height;
-        // Assert mine count doesn't exceed the number of tiles.
-        assert!(mines <= size);
+    /// If `mines >= width * height`.
+    pub fn new(config: &GenerationConfig) -> Self {
+        let size = config.width * config.height;
+        assert!(config.mine_count < size, "`mines` must be less than `size`");
 
         // Generate mine indexes.
         // TODO: Replace with seeded rng.
-        let rng = &mut rand::thread_rng();
-        let mine_idxs = rand::seq::index::sample(rng, size, mines);
+        let mut rng = rand_pcg::Pcg64Mcg::new(config.seed.to_u128());
+        let mine_idxs = rand::seq::index::sample(&mut rng, size, config.mine_count);
 
-        // Setup empty sized board.
+        // Setup empty board with the final size.
         let empty_board = Self {
             tiles: {
                 let mut vec = Vec::new();
                 vec.resize(size, Tile::Near(0));
                 vec
             },
-            width,
+            width: config.width,
         };
         let mut numbered = empty_board.clone();
         // Add mines and number tiles based on mine positions.

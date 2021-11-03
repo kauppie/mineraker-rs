@@ -1,4 +1,5 @@
 mod board;
+mod tile;
 
 use crate::board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig, Position};
 

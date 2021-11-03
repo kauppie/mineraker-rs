@@ -1,39 +1,4 @@
-#[derive(Debug, Clone)]
-pub enum Tile {
-    // Tells the number of mines near the tile.
-    Near(u8),
-    Mine,
-}
-
-impl Tile {
-    #[allow(dead_code)]
-    pub fn is_mine(&self) -> bool {
-        match self {
-            Tile::Mine => true,
-            _ => false,
-        }
-    }
-}
-
-impl std::fmt::Display for Tile {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Tile::Near(0) => "_".to_string(),
-                Tile::Near(val) => val.to_string(),
-                Tile::Mine => "#".to_string(),
-            }
-        )
-    }
-}
-
-impl Default for Tile {
-    fn default() -> Self {
-        Tile::Near(0)
-    }
-}
+use crate::tile::Tile;
 
 /// [`Position`] stores 2-dimensional non-negative coordinates in uniform grid space,
 /// or xy-coordinates.
@@ -50,6 +15,8 @@ pub trait BoardGenSeeder {
 }
 
 /// [`BoardSeed`] is a seed used for stable generation of a board.
+/// Current version of board generation uses only the first 127 bits of the seed.
+#[derive(Debug, Clone, Copy)]
 pub struct BoardSeed(u128);
 
 impl BoardGenSeeder for BoardSeed {
@@ -62,13 +29,15 @@ impl BoardGenSeeder for BoardSeed {
     }
 }
 
-/// [`GenerationConfig`] contains parameters for generating a [`Board`], including [`Seed`].
+/// [`GenerationConfig`] contains parameters for generating a [`Board`], including [`BoardSeed`].
 /// Two boards with same config are exactly the same in content.
+#[derive(Debug, Clone, Copy)]
 pub struct GenerationConfig {
     pub seed: BoardSeed,
     pub width: usize,
     pub height: usize,
     pub mine_count: usize,
+    // TODO: use start_pos in board generation.
     pub start_pos: Position,
 }
 

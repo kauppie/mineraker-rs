@@ -56,13 +56,12 @@ impl Board {
         let size = config.width * config.height;
         assert!(config.mine_count < size, "`mines` must be less than `size`");
 
-        // Generate mine indexes.
-        // TODO: Replace with seeded rng.
+        // Generate mine indexes using config seed.
         let mut rng = rand_pcg::Pcg64Mcg::new(config.seed.to_u128());
         let mine_idxs = rand::seq::index::sample(&mut rng, size, config.mine_count);
 
         // Setup empty board with the final size.
-        let empty_board = Self {
+        let mut numbered = Self {
             tiles: {
                 let mut vec = Vec::new();
                 vec.resize(size, Tile::Near(0));
@@ -70,20 +69,23 @@ impl Board {
             },
             width: config.width,
         };
-        let mut numbered = empty_board.clone();
+
         // Add mines and number tiles based on mine positions.
         mine_idxs.iter().for_each(|idx| {
             numbered.tiles[idx] = Tile::Mine;
             // Increment number of all non-mine neighbors.
-            empty_board
-                .tile_neighbors(empty_board.idx_to_pos(idx))
-                .for_each(|pos| {
-                    // Unwrap as these coordinates are directly from enumeration and
-                    // `board` and `numbered` are the same size.
-                    if let Tile::Near(val) = numbered.get_tile_mut(pos).unwrap() {
-                        *val += 1;
-                    }
-                });
+            Board::tile_neighbors_positions(
+                Board::idx_to_pos(idx, config.width),
+                config.width,
+                config.height,
+            )
+            .for_each(|pos| {
+                // Unwrap as these coordinates are directly from enumeration and
+                // `board` and `numbered` are the same size.
+                if let Tile::Near(val) = numbered.get_tile_mut(pos).unwrap() {
+                    *val += 1;
+                }
+            });
         });
 
         numbered
@@ -92,10 +94,10 @@ impl Board {
     /// Returns the position of the given idx given the board coordinate mapping.
     /// Position is not valid if the idx is greater than or equal to size of the board.
     #[inline]
-    fn idx_to_pos(&self, idx: usize) -> Position {
+    fn idx_to_pos(idx: usize, width: usize) -> Position {
         Position {
-            x: idx % self.width,
-            y: idx / self.width,
+            x: idx % width,
+            y: idx / width,
         }
     }
 
@@ -106,15 +108,13 @@ impl Board {
         pos.y * self.width + pos.x
     }
 
-    /// Returns position iterator over all board coordinates.
-    #[allow(dead_code)]
-    fn pos_iter(&self) -> impl Iterator<Item = Position> + '_ {
-        (0..self.tiles.len()).map(move |idx| self.idx_to_pos(idx))
-    }
-
-    /// Returns iterator over tile neighbor coordinates at the given coordinates.
-    /// Excludes coordinates outside the board boundaries.
-    pub fn tile_neighbors(&self, pos: Position) -> impl Iterator<Item = Position> + '_ {
+    /// Returns iterator over tile's neighbors' positions.
+    /// Excludes positions outside the board boundaries.
+    fn tile_neighbors_positions(
+        pos: Position,
+        width: usize,
+        height: usize,
+    ) -> impl Iterator<Item = Position> {
         let (x, y) = (pos.x, pos.y);
         // Use wrapping_sub to wrap around to usize::MAX on zero values to always filter them out.
         [
@@ -143,7 +143,7 @@ impl Board {
             Position { x: x + 1, y: y + 1 },
         ]
         .into_iter()
-        .filter(|pos| pos.x < self.width && pos.y < self.height())
+        .filter(move |pos| pos.x < width && pos.y < height)
     }
 
     #[inline]

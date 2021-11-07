@@ -30,9 +30,27 @@ pub fn bench_generate_large_board(c: &mut Criterion) {
     });
 }
 
+pub fn bench_cascade_open(c: &mut Criterion) {
+    c.bench_function("Cascade open", |b| {
+        b.iter(|| {
+            let mut board = Board::new(&GenerationConfig {
+                seed: BoardSeed::from_u128(0),
+                width: 30,
+                height: 16,
+                mine_count: 99,
+                start_pos: Position::default(),
+            });
+            board.open_from(Position { x: 15, y: 5 });
+
+            black_box(board)
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_generate_small_board,
     bench_generate_large_board,
+    bench_cascade_open,
 );
 criterion_main!(benches);

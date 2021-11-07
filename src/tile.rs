@@ -12,14 +12,48 @@ impl Tile {
     pub fn with_value(value: Value) -> Self {
         Self {
             value,
-            state: Default::default(),
+            ..Default::default()
         }
     }
 
+    #[inline]
     pub fn increment_value(&mut self) {
         if let Value::Near(value) = &mut self.value {
             *value += 1;
         }
+    }
+
+    #[inline]
+    pub fn open(&mut self) {
+        if self.state == State::Closed {
+            self.state = State::Open;
+        }
+    }
+
+    #[inline]
+    pub fn flag(&mut self) {
+        if self.state == State::Closed {
+            self.state = State::Flag;
+        }
+    }
+
+    #[inline]
+    pub fn toggle_flag(&mut self) {
+        self.state = match self.state {
+            State::Closed => State::Flag,
+            State::Open => State::Open,
+            State::Flag => State::Closed,
+        };
+    }
+
+    #[inline]
+    pub fn value(self) -> Value {
+        self.value
+    }
+
+    #[inline]
+    pub fn state(self) -> State {
+        self.state
     }
 }
 
@@ -52,7 +86,7 @@ impl std::fmt::Display for Value {
             match self {
                 Value::Near(0) => "_".to_string(),
                 Value::Near(val) => val.to_string(),
-                Value::Mine => "#".to_string(),
+                Value::Mine => "*".to_string(),
             }
         )
     }
@@ -69,16 +103,6 @@ pub enum State {
     Closed,
     Open,
     Flag,
-}
-
-impl State {
-    pub fn open(&self) -> Option<Self> {
-        if *self == State::Closed {
-            Some(State::Open)
-        } else {
-            None
-        }
-    }
 }
 
 impl Default for State {

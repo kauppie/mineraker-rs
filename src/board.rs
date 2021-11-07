@@ -1,8 +1,10 @@
-use crate::tile::{Tile, Value};
+use std::collections::HashSet;
+
+use crate::tile::{State, Tile, Value};
 
 /// [`Position`] stores 2-dimensional non-negative coordinates in uniform grid space,
 /// or xy-coordinates.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Position {
     pub x: usize,
     pub y: usize,
@@ -33,6 +35,84 @@ impl Position {
     #[inline]
     pub fn to_index(self, width: usize) -> usize {
         self.y * width + self.x
+    }
+
+    pub fn neighbors(self, width: usize, height: usize) -> impl Iterator<Item = Self> {
+        let (x, y) = (self.x, self.y);
+        // Use wrapping_sub to wrap around to usize::MAX on zero values to always filter them out.
+        [
+            Position::new(x.wrapping_sub(1), y.wrapping_sub(1)),
+            Position::new(x, y.wrapping_sub(1)),
+            Position::new(x + 1, y.wrapping_sub(1)),
+            Position::new(x.wrapping_sub(1), y),
+            Position::new(x + 1, y),
+            Position::new(x.wrapping_sub(1), y + 1),
+            Position::new(x, y + 1),
+            Position::new(x + 1, y + 1),
+        ]
+        .into_iter()
+        .filter(move |pos| pos.x < width && pos.y < height)
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct Area {
+    positions: HashSet<Position>,
+    // Stores the number of mines area contains.
+    // Option is `None` if area contains unknown number of mines.
+    mine_count: Option<usize>,
+}
+
+impl Area {
+    pub fn new(positions: HashSet<Position>, mine_count: usize) -> Self {
+        Self {
+            positions,
+            mine_count: Some(mine_count),
+        }
+    }
+
+    #[inline]
+    pub fn has_subarea(&self, other: &Self) -> bool {
+        self.positions.is_superset(&other.positions)
+    }
+
+    pub fn difference(&self, other: &Self) -> Self {
+        let other_contains = other.has_subarea(self);
+        let self_contains = self.has_subarea(other);
+
+        match (other_contains, self_contains) {
+            // Areas are equivalent.
+            (true, true) => Self {
+                positions: self.positions.clone(),
+                mine_count: self.mine_count.or(other.mine_count),
+            },
+            // Other contains self area.
+            (true, false) => Self {
+                positions: HashSet::new(),
+                mine_count: Some(0),
+            },
+            // Self contains other area.
+            (false, true) => Self {
+                positions: self
+                    .positions
+                    .difference(&other.positions)
+                    .copied()
+                    .collect(),
+                mine_count: self
+                    .mine_count
+                    .zip(other.mine_count)
+                    .and_then(|(self_mines, other_mines)| Some(self_mines - other_mines)),
+            },
+            // Areas may overlap.
+            (false, false) => Self {
+                positions: self
+                    .positions
+                    .difference(&other.positions)
+                    .copied()
+                    .collect(),
+                mine_count: None,
+            },
+        }
     }
 }
 
@@ -90,55 +170,105 @@ impl Board {
         let mine_idxs = rand::seq::index::sample(&mut rng, size, config.mine_count);
 
         // Setup empty board with the final size.
-        let mut numbered = Self {
+        let mut board = Self {
             tiles: vec![Tile::default(); size],
             width: config.width,
         };
 
         // Add mines and number tiles based on mine positions.
         mine_idxs.iter().for_each(|idx| {
-            numbered.tiles[idx] = Tile::with_value(Value::Mine);
+            board.tiles[idx] = Tile::with_value(Value::Mine);
             // Increment number of all non-mine neighbors.
-            Board::tile_neighbors_positions(
-                Position::from_index(idx, config.width),
-                config.width,
-                config.height,
-            )
-            .for_each(|pos| {
-                // Unwrap as these positions are directly from enumeration.
-                numbered.get_tile_mut(pos).unwrap().increment_value();
-            });
+            Position::from_index(idx, config.width)
+                .neighbors(config.width, config.height)
+                .for_each(|pos| {
+                    // Unwrap as these positions are directly from enumeration.
+                    board.get_tile_mut(pos).unwrap().increment_value();
+                });
         });
 
-        numbered
+        board
     }
 
     /// Generates a boad with empty tiles at the given position, using generation config.
-    pub fn with_empty_at(config: &GenerationConfig, pos: Position) -> Self {
+    #[allow(dead_code)]
+    pub fn with_empty_at(_config: &GenerationConfig, _pos: Position) -> Self {
         todo!()
     }
 
-    /// Returns iterator over tile's neighbors' positions.
-    /// Excludes positions outside the board boundaries.
-    fn tile_neighbors_positions(
-        pos: Position,
-        width: usize,
-        height: usize,
-    ) -> impl Iterator<Item = Position> {
-        let (x, y) = (pos.x, pos.y);
-        // Use wrapping_sub to wrap around to usize::MAX on zero values to always filter them out.
-        [
-            Position::new(x.wrapping_sub(1), y.wrapping_sub(1)),
-            Position::new(x, y.wrapping_sub(1)),
-            Position::new(x + 1, y.wrapping_sub(1)),
-            Position::new(x.wrapping_sub(1), y),
-            Position::new(x + 1, y),
-            Position::new(x.wrapping_sub(1), y + 1),
-            Position::new(x, y + 1),
-            Position::new(x + 1, y + 1),
-        ]
-        .into_iter()
-        .filter(move |pos| pos.x < width && pos.y < height)
+    fn empty_area(&self, pos: Position) -> Vec<Position> {
+        let mut stack = Vec::new();
+        let mut emptys = Vec::new();
+        let mut processed = vec![false; self.width * self.height()];
+
+        stack.push(pos);
+        while let Some(p) = stack.pop() {
+            processed[p.to_index(self.width)] = true;
+            emptys.push(p);
+
+            stack.extend(p.neighbors(self.width, self.height()).filter(|p| {
+                let i = p.to_index(self.width);
+                !processed[i]
+                    && self.tiles[i].value() == Value::Near(0)
+                    && self.tiles[i].state() == State::Closed
+            }));
+        }
+
+        emptys
+    }
+
+    pub fn open_from(&mut self, pos: Position) {
+        if let Some(tile) = self.get_tile_mut(pos) {
+            tile.open();
+        }
+        if let Some(tile) = self.get_tile(pos) {
+            if tile.value() == Value::Near(0) {
+                for p in self.empty_area(pos) {
+                    self.tiles[p.to_index(self.width)].open();
+                    p.neighbors(self.width, self.height())
+                        .for_each(|p| self.tiles[p.to_index(self.width)].open());
+                }
+            }
+        }
+    }
+
+    /// Opens single tile if the given position is within board bounds and
+    /// tile is valid as openable i.e. it is closed.
+    #[inline]
+    fn open_tile(&mut self, pos: Position) {
+        if let Some(tile) = self.get_tile_mut(pos) {
+            tile.open();
+        }
+    }
+
+    pub fn flag_from(&mut self, pos: Position) {
+        if let Some(tile) = self.get_tile_mut(pos) {
+            tile.toggle_flag();
+        }
+    }
+
+    /// Returns tile's not opened neighbor tiles as [`Area`].
+    fn tile_neighbors_area(&self, pos: Position) -> Area {
+        let flags_around = self
+            .neighbors_tile_and_pos(pos)
+            .filter(|(_, tile)| tile.state() == State::Flag)
+            .count();
+        Area {
+            positions: self
+                .neighbors_tile_and_pos(pos)
+                .filter(|(_, tile)| tile.state() == State::Closed)
+                .map(|(p, _)| p)
+                .collect(),
+            mine_count: self.get_tile(pos).and_then(|tile| match tile.value() {
+                Value::Near(val) => Some(val as usize - flags_around),
+                Value::Mine => None,
+            }),
+        }
+    }
+
+    pub fn neighbors_tile_and_pos(&self, pos: Position) -> impl Iterator<Item = (Position, &Tile)> {
+        pos.neighbors(self.width, self.height())
+            .map(|p| (p, self.get_tile(p).unwrap()))
     }
 
     #[inline]

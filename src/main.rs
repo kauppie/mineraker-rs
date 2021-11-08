@@ -1,8 +1,6 @@
 mod board;
 mod tile;
 
-use std::collections::HashSet;
-
 use crate::board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig, Position};
 
 /// * Fix board generation to be unique for all seeds.
@@ -17,7 +15,6 @@ use crate::board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig, Position}
 /// * Efficient algorithms using mainly iterators.
 
 fn main() {
-    /*
     let mut board = Board::new(&GenerationConfig {
         seed: BoardSeed::from_u128(0),
         width: 30,
@@ -29,18 +26,4 @@ fn main() {
     board.open_from(Position { x: 15, y: 5 });
 
     println!("{}", board);
-    */
-
-    let mut set = HashSet::new();
-    for i in 0..10 {
-        set.insert(i);
-    }
-    let mut set2 = HashSet::new();
-    for i in 4..15 {
-        set2.insert(i);
-    }
-
-    println!("{:?}", set);
-    println!("{:?}", set2);
-    println!("{:?}", set.intersection(&set2));
 }

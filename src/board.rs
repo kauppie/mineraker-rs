@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, ops::RangeInclusive};
 
 use crate::tile::{State, Tile, Value};
 
@@ -55,6 +55,11 @@ impl Position {
     }
 }
 
+pub enum MineCount {
+    Defined(usize),
+    RangeInclusive(RangeInclusive<usize>),
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Area {
     positions: HashSet<Position>,
@@ -96,7 +101,7 @@ impl Area {
                 positions: self
                     .positions
                     .difference(&other.positions)
-                    .copied()
+                    .cloned()
                     .collect(),
                 mine_count: self
                     .mine_count
@@ -105,26 +110,42 @@ impl Area {
             },
             // Areas may overlap.
             (false, false) => {
-                let positions = self
+                let diff = self
                     .positions
                     .difference(&other.positions)
-                    .copied()
+                    .cloned()
                     .collect::<HashSet<_>>();
                 // Mine count can be determined only if difference area contains as many positions
                 // as is the difference in the mine count between areas.
+                // Difference area always contains `self_mines - other_mines..=positions.len()` mines.
                 let mine_count =
                     self.mine_count
                         .zip(other.mine_count)
                         .and_then(|(self_mines, other_mines)| {
-                            (positions.len() == self_mines - other_mines).then(|| positions.len())
+                            (diff.len() == self_mines - other_mines).then(|| diff.len())
                         });
                 Self {
-                    positions,
+                    positions: diff,
                     mine_count,
                 }
             }
         }
     }
+
+    // pub fn difference2(&self, other: &Self) -> (HashSet<Position>, RangeInclusive<usize>) {
+    //     let diff = self
+    //         .positions
+    //         .difference(&other.positions)
+    //         .cloned()
+    //         .collect::<HashSet<_>>();
+
+    //     let mine_count = self
+    //         .mine_count
+    //         .zip(other.mine_count)
+    //         .and_then(|(self_mines, other_mines)| Some(self_mines - other_mines..=diff.len()));
+
+    //     (diff, mine_count.unwrap())
+    // }
 }
 
 pub trait BoardGenSeeder {

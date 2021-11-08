@@ -104,14 +104,25 @@ impl Area {
                     .and_then(|(self_mines, other_mines)| Some(self_mines - other_mines)),
             },
             // Areas may overlap.
-            (false, false) => Self {
-                positions: self
+            (false, false) => {
+                let positions = self
                     .positions
                     .difference(&other.positions)
                     .copied()
-                    .collect(),
-                mine_count: None,
-            },
+                    .collect::<HashSet<_>>();
+                // Mine count can be determined only if difference area contains as many positions
+                // as is the difference in the mine count between areas.
+                let mine_count =
+                    self.mine_count
+                        .zip(other.mine_count)
+                        .and_then(|(self_mines, other_mines)| {
+                            (positions.len() == self_mines - other_mines).then(|| positions.len())
+                        });
+                Self {
+                    positions,
+                    mine_count,
+                }
+            }
         }
     }
 }

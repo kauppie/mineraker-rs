@@ -65,10 +65,10 @@ pub struct Area {
 }
 
 impl Area {
-    pub fn new(positions: HashSet<Position>, mine_count: usize) -> Self {
+    pub fn new(positions: HashSet<Position>, mine_count: MineCount) -> Self {
         Self {
             positions,
-            mine_count: mine_count..=mine_count,
+            mine_count,
         }
     }
 
@@ -78,19 +78,32 @@ impl Area {
     }
 
     pub fn difference(&self, other: &Self) -> Self {
+        // Actual difference Area returned.
         let diff = self
             .positions
             .difference(&other.positions)
             .cloned()
-            .collect::<HashSet<_>>();
+            .collect();
+
+        // Calculation of the number of mines in difference area.
 
         let intersection_size = self.positions.intersection(&other.positions).count();
+        // Size of the difference area in other, but not in self.
+        // Same as `other.positions.difference(&self.positions).count()`.
         let other_diff = other.positions.len() - intersection_size;
 
+        // Minimum count has an upper bound as the number of mines whole self area at least
+        // contains and a lower bound as number of mines intersection between self and other
+        // could contain limited by other's total maximum mine count substracted from minimum
+        // total mine count in self.
         let min_mine_count =
             self.mine_count.start() - intersection_size.min(*other.mine_count.end());
-        // Here `x.sub(b).max(0)` is replaced by `x.saturating_sub(b)` to prevent result from
-        // overflowing.
+        // Maximum count has an upper bound as number of self area at most contains and lower bound
+        // as number of mines other at least contains substracted by other's difference area
+        // fits these mines substracted from maximum mine count of self area.
+        //
+        // Here `x.saturating_sub(b)` replaces `x.sub(b).max(0)` to prevent result
+        // from overflowing.
         let max_mine_count =
             self.mine_count.end() - other.mine_count.start().saturating_sub(other_diff);
 

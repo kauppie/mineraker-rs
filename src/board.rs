@@ -55,24 +55,20 @@ impl Position {
     }
 }
 
-pub enum MineCount {
-    Defined(usize),
-    RangeInclusive(RangeInclusive<usize>),
-}
+pub type MineCount = RangeInclusive<usize>;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Area {
     positions: HashSet<Position>,
     // Stores the number of mines area contains.
-    // Option is `None` if area contains unknown number of mines.
-    mine_count: Option<usize>,
+    mine_count: MineCount,
 }
 
 impl Area {
     pub fn new(positions: HashSet<Position>, mine_count: usize) -> Self {
         Self {
             positions,
-            mine_count: Some(mine_count),
+            mine_count: mine_count..=mine_count,
         }
     }
 
@@ -82,70 +78,19 @@ impl Area {
     }
 
     pub fn difference(&self, other: &Self) -> Self {
-        let other_contains = other.has_subarea(self);
-        let self_contains = self.has_subarea(other);
+        let diff = self
+            .positions
+            .difference(&other.positions)
+            .cloned()
+            .collect::<HashSet<_>>();
+        let mine_count = self.mine_count.start() - other.mine_count.end()
+            ..=*self.mine_count.end().min(&diff.len());
 
-        match (other_contains, self_contains) {
-            // Areas are equivalent.
-            (true, true) => Self {
-                positions: self.positions.clone(),
-                mine_count: self.mine_count.or(other.mine_count),
-            },
-            // Other contains self area.
-            (true, false) => Self {
-                positions: HashSet::new(),
-                mine_count: Some(0),
-            },
-            // Self contains other area.
-            (false, true) => Self {
-                positions: self
-                    .positions
-                    .difference(&other.positions)
-                    .cloned()
-                    .collect(),
-                mine_count: self
-                    .mine_count
-                    .zip(other.mine_count)
-                    .and_then(|(self_mines, other_mines)| Some(self_mines - other_mines)),
-            },
-            // Areas may overlap.
-            (false, false) => {
-                let diff = self
-                    .positions
-                    .difference(&other.positions)
-                    .cloned()
-                    .collect::<HashSet<_>>();
-                // Mine count can be determined only if difference area contains as many positions
-                // as is the difference in the mine count between areas.
-                // Difference area always contains `self_mines - other_mines..=positions.len()` mines.
-                let mine_count =
-                    self.mine_count
-                        .zip(other.mine_count)
-                        .and_then(|(self_mines, other_mines)| {
-                            (diff.len() == self_mines - other_mines).then(|| diff.len())
-                        });
-                Self {
-                    positions: diff,
-                    mine_count,
-                }
-            }
+        Self {
+            positions: diff,
+            mine_count,
         }
     }
-
-    // pub fn difference2(&self, other: &Self) -> (HashSet<Position>, RangeInclusive<usize>) {
-    //     let diff = self
-    //         .positions
-    //         .difference(&other.positions)
-    //         .cloned()
-    //         .collect::<HashSet<_>>();
-
-    //     let mine_count = self
-    //         .mine_count
-    //         .zip(other.mine_count)
-    //         .and_then(|(self_mines, other_mines)| Some(self_mines - other_mines..=diff.len()));
-
-    //     (diff, mine_count.unwrap())
-    // }
 }
 
 pub trait BoardGenSeeder {
@@ -291,10 +236,15 @@ impl Board {
                 .filter(|(_, tile)| tile.state() == State::Closed)
                 .map(|(p, _)| p)
                 .collect(),
-            mine_count: self.get_tile(pos).and_then(|tile| match tile.value() {
-                Value::Near(val) => Some(val as usize - flags_around),
-                Value::Mine => None,
-            }),
+            mine_count: match self.get_tile(pos) {
+                Some(tile) => match tile.value() {
+                    Value::Near(val) => {
+                        MineCount::new(val as usize - flags_around, val as usize - flags_around)
+                    }
+                    Value::Mine => MineCount::new(0, 8),
+                },
+                None => MineCount::new(0, 8),
+            },
         }
     }
 

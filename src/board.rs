@@ -83,12 +83,20 @@ impl Area {
             .difference(&other.positions)
             .cloned()
             .collect::<HashSet<_>>();
-        let mine_count = self.mine_count.start() - other.mine_count.end()
-            ..=*self.mine_count.end().min(&diff.len());
+
+        let intersection_size = self.positions.intersection(&other.positions).count();
+        let other_diff = other.positions.len() - intersection_size;
+
+        let min_mine_count =
+            self.mine_count.start() - intersection_size.min(*other.mine_count.end());
+        // Here `x.sub(b).max(0)` is replaced by `x.saturating_sub(b)` to prevent result from
+        // overflowing.
+        let max_mine_count =
+            self.mine_count.end() - other.mine_count.start().saturating_sub(other_diff);
 
         Self {
             positions: diff,
-            mine_count,
+            mine_count: min_mine_count..=max_mine_count,
         }
     }
 }

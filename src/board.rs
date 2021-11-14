@@ -77,7 +77,8 @@ impl Area {
     ///
     /// Following shows equivalence between this and `Area::new` function.
     /// ```
-    /// // This example is logically invalid, but serves its purpose to show equivalence.
+    /// use mineraker::board::Area;
+    ///
     /// let area1 = Area::with_definite_mine_count(Default::default(), 5);
     /// let area2 = Area::new(Default::default(), 5..=5);
     ///
@@ -167,11 +168,9 @@ impl Area {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use crate::board::Area;
-
     use super::Position;
+    use crate::board::Area;
+    use std::collections::HashSet;
 
     #[test]
     fn area_creation_equivalence() {
@@ -272,7 +271,7 @@ mod tests {
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=2));
         }
         {
             let area1 = Area::new(positions1.clone(), 0..=1);
@@ -288,7 +287,60 @@ mod tests {
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(diff, Area::new(diff_1_positions.clone(), 1..=2));
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=2));
+        }
+
+        let positions3 = HashSet::from([
+            Position::new(0, 0),
+            Position::new(0, 1),
+            Position::new(0, 2),
+            Position::new(1, 0),
+            Position::new(1, 2),
+            Position::new(2, 0),
+            Position::new(2, 2),
+            Position::new(2, 1),
+        ]);
+        let positions4 = HashSet::from([
+            Position::new(2, 0),
+            Position::new(2, 2),
+            Position::new(2, 1),
+        ]);
+        let diff_3_positions: HashSet<Position> =
+            positions3.difference(&positions4).cloned().collect();
+        let diff_4_positions: HashSet<Position> =
+            positions4.difference(&positions3).cloned().collect();
+
+        {
+            let area1 = Area::new(positions3.clone(), 1..=1);
+            let area2 = Area::new(positions4.clone(), 0..=1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::new(positions3.clone(), 1..=2);
+            let area2 = Area::new(positions4.clone(), 0..=1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=2));
+        }
+        {
+            let area1 = Area::new(positions3.clone(), 2..=3);
+            let area2 = Area::new(positions4.clone(), 0..=1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 1..=3));
+        }
+        {
+            let area1 = Area::new(positions3.clone(), 2..=3);
+            let area2 = Area::new(positions4.clone(), 1..=2);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=2));
         }
     }
 }

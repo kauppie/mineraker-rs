@@ -94,39 +94,6 @@ impl Area {
         }
     }
 
-    pub fn intersection(&self, other: &Self) -> Self {
-        let intersection: HashSet<Position> = self
-            .positions
-            .intersection(&other.positions)
-            .cloned()
-            .collect();
-
-        let self_diff = self.positions.len() - intersection.len();
-        let other_diff = other.positions.len() - intersection.len();
-
-        let min_intersection_mines = {
-            let leaks_from_self = self.mine_count.start().saturating_sub(self_diff);
-            let leaks_from_other = other.mine_count.start().saturating_sub(other_diff);
-            let intersection_least_contains = leaks_from_self.max(leaks_from_other);
-
-            intersection.len().min(intersection_least_contains)
-        };
-        let max_intersection_mines = {
-            let fills_from_self = *self.mine_count.end();
-            let fills_from_other = *other.mine_count.end();
-
-            intersection
-                .len()
-                .min(fills_from_self)
-                .min(fills_from_other)
-        };
-
-        Self {
-            positions: intersection,
-            mine_count: min_intersection_mines..=max_intersection_mines,
-        }
-    }
-
     pub fn difference(&self, other: &Self) -> Self {
         let diff: HashSet<Position> = self
             .positions
@@ -149,6 +116,7 @@ impl Area {
             // Can't underflow as intersection is always equal to or smaller than
             // the area that forms it.
             let other_diff_size = other.positions.len() - intersection_size;
+            // Use `saturating_sub` to limit value to zero with unsigned integers.
             let other_mines_overflow_to_intersection =
                 other.mine_count.start().saturating_sub(other_diff_size);
 

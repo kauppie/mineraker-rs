@@ -72,44 +72,223 @@ impl Area {
         }
     }
 
-    #[inline]
-    pub fn has_subarea(&self, other: &Self) -> bool {
-        self.positions.is_superset(&other.positions)
+    /// This constructor is used when the number of mines in given area is known to be some
+    /// specific value.
+    ///
+    /// Following shows equivalence between this and `Area::new` function.
+    /// ```
+    /// // This example is logically invalid, but serves its purpose to show equivalence.
+    /// let area1 = Area::with_definite_mine_count(Default::default(), 5);
+    /// let area2 = Area::new(Default::default(), 5..=5);
+    ///
+    /// assert_eq!(area1, area2);
+    /// ```
+    pub fn with_definite_mine_count(
+        positions: HashSet<Position>,
+        definite_mine_count: usize,
+    ) -> Self {
+        Self {
+            positions,
+            mine_count: definite_mine_count..=definite_mine_count,
+        }
+    }
+
+    pub fn intersection(&self, other: &Self) -> Self {
+        let intersection: HashSet<Position> = self
+            .positions
+            .intersection(&other.positions)
+            .cloned()
+            .collect();
+
+        let self_diff = self.positions.len() - intersection.len();
+        let other_diff = other.positions.len() - intersection.len();
+
+        let min_intersection_mines = {
+            let leaks_from_self = self.mine_count.start().saturating_sub(self_diff);
+            let leaks_from_other = other.mine_count.start().saturating_sub(other_diff);
+            let intersection_least_contains = leaks_from_self.max(leaks_from_other);
+
+            intersection.len().min(intersection_least_contains)
+        };
+        let max_intersection_mines = {
+            let fills_from_self = *self.mine_count.end();
+            let fills_from_other = *other.mine_count.end();
+
+            intersection
+                .len()
+                .min(fills_from_self)
+                .min(fills_from_other)
+        };
+
+        Self {
+            positions: intersection,
+            mine_count: min_intersection_mines..=max_intersection_mines,
+        }
     }
 
     pub fn difference(&self, other: &Self) -> Self {
-        // Actual difference Area returned.
-        let diff = self
+        let diff: HashSet<Position> = self
             .positions
             .difference(&other.positions)
             .cloned()
             .collect();
 
-        // Calculation of the number of mines in difference area.
-
         let intersection_size = self.positions.intersection(&other.positions).count();
-        // Size of the difference area in other, but not in self.
-        // Same as `other.positions.difference(&self.positions).count()`.
-        let other_diff = other.positions.len() - intersection_size;
 
-        // Minimum count has an upper bound as the number of mines whole self area at least
-        // contains and a lower bound as number of mines intersection between self and other
-        // could contain limited by other's total maximum mine count substracted from minimum
-        // total mine count in self.
-        let min_mine_count =
-            self.mine_count.start() - intersection_size.min(*other.mine_count.end());
-        // Maximum count has an upper bound as number of self area at most contains and lower bound
-        // as number of mines other at least contains substracted by other's difference area
-        // fits these mines substracted from maximum mine count of self area.
-        //
-        // Here `x.saturating_sub(b)` replaces `x.sub(b).max(0)` to prevent result
-        // from overflowing.
-        let max_mine_count =
-            self.mine_count.end() - other.mine_count.start().saturating_sub(other_diff);
+        let diff_min_mines = {
+            let intersection_mines = intersection_size
+                .min(*self.mine_count.start())
+                .min(*other.mine_count.end());
+
+            // This can't underflow as `intersection_mines` equal to or smaller than
+            // `self.mine_count.start()` based on previous expression.
+            self.mine_count.start() - intersection_mines
+        };
+        let diff_max_mines = {
+            // Can't underflow as intersection is always equal to or smaller than
+            // the area that forms it.
+            let other_diff_size = other.positions.len() - intersection_size;
+            let other_mines_overflow_to_intersection =
+                other.mine_count.start().saturating_sub(other_diff_size);
+
+            // Substraction can't underflow as `self.mine_count.end()` contains
+            // mines that could possibly be in the intersection area and therefore
+            // it is always greater or equal to mines in the intersection.
+            diff.len()
+                .min(self.mine_count.end() - other_mines_overflow_to_intersection)
+        };
 
         Self {
             positions: diff,
-            mine_count: min_mine_count..=max_mine_count,
+            mine_count: diff_min_mines..=diff_max_mines,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::board::Area;
+
+    use super::Position;
+
+    #[test]
+    fn area_creation_equivalence() {
+        let area1 = Area::new(Default::default(), 1..=1);
+        let area2 = Area::with_definite_mine_count(Default::default(), 1);
+
+        assert_eq!(area1, area2);
+    }
+    #[test]
+    fn area_difference_with_definite_mine_count() {
+        let positions1 = HashSet::from([
+            Position::new(0, 1),
+            Position::new(0, 0),
+            Position::new(1, 0),
+            Position::new(2, 0),
+        ]);
+        let positions2 = HashSet::from([
+            Position::new(1, 0),
+            Position::new(2, 0),
+            Position::new(3, 0),
+        ]);
+        let diff_1_positions: HashSet<Position> =
+            positions1.difference(&positions2).cloned().collect();
+        let diff_2_positions: HashSet<Position> =
+            positions2.difference(&positions1).cloned().collect();
+
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 1);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 2);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 1..=2));
+        }
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 3);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 2..=2));
+        }
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 1);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area2.difference(&area1);
+
+            assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 2);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area2.difference(&area1);
+
+            assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::with_definite_mine_count(positions1.clone(), 3);
+            let area2 = Area::with_definite_mine_count(positions2.clone(), 1);
+
+            let diff = area2.difference(&area1);
+
+            assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=0));
+        }
+    }
+
+    #[test]
+    fn area_difference_with_ranged_mine_count() {
+        let positions1 = HashSet::from([
+            Position::new(0, 1),
+            Position::new(0, 0),
+            Position::new(1, 0),
+            Position::new(2, 0),
+        ]);
+        let positions2 = HashSet::from([
+            Position::new(1, 0),
+            Position::new(2, 0),
+            Position::new(3, 0),
+        ]);
+        let diff_1_positions: HashSet<Position> =
+            positions1.difference(&positions2).cloned().collect();
+        let diff_2_positions: HashSet<Position> =
+            positions2.difference(&positions1).cloned().collect();
+
+        {
+            let area1 = Area::new(positions1.clone(), 0..=2);
+            let area2 = Area::new(positions2.clone(), 1..=2);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::new(positions1.clone(), 0..=1);
+            let area2 = Area::new(positions2.clone(), 0..=2);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
+        }
+        {
+            let area1 = Area::new(positions1.clone(), 1..=3);
+            let area2 = Area::new(positions2.clone(), 0..=2);
+
+            let diff = area1.difference(&area2);
+
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 1..=2));
         }
     }
 }

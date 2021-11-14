@@ -24,7 +24,7 @@ impl Area {
     ///
     /// Following shows equivalence between this and `Area::new` function.
     /// ```
-    /// use mineraker::board::Area;
+    /// use mineraker::area::Area;
     ///
     /// let area1 = Area::with_definite_mine_count(Default::default(), 5);
     /// let area2 = Area::new(Default::default(), 5..=5);

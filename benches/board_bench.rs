@@ -1,6 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use mineraker::board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig, Position};
+use mineraker::{
+    board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig},
+    position::Position,
+};
 
 pub fn bench_generate_small_board(c: &mut Criterion) {
     c.bench_function("Generate small board", |b| {

@@ -1,7 +1,12 @@
+mod area;
 mod board;
+mod position;
 mod tile;
 
-use crate::board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig, Position};
+use crate::{
+    board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig},
+    position::Position,
+};
 
 /// * Fix board generation to be unique for all seeds.
 ///   LSB of the seed doesn't currently have any effect on the generation.

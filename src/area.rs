@@ -177,8 +177,6 @@ mod tests {
         ]);
         let diff_1_positions: HashSet<Position> =
             positions1.difference(&positions2).cloned().collect();
-        let diff_2_positions: HashSet<Position> =
-            positions2.difference(&positions1).cloned().collect();
 
         {
             let area1 = Area::new(positions1.clone(), 0..=2);
@@ -222,8 +220,6 @@ mod tests {
         ]);
         let diff_3_positions: HashSet<Position> =
             positions3.difference(&positions4).cloned().collect();
-        let diff_4_positions: HashSet<Position> =
-            positions4.difference(&positions3).cloned().collect();
 
         {
             let area1 = Area::new(positions3.clone(), 1..=1);

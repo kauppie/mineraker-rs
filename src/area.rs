@@ -12,6 +12,7 @@ pub struct Area {
 }
 
 impl Area {
+    /// Creates a new [`Area`] with the given positions and a mine count range.
     pub fn new(positions: HashSet<Position>, mine_count: MineCount) -> Self {
         Self {
             positions,
@@ -19,10 +20,9 @@ impl Area {
         }
     }
 
-    /// This constructor is used when the number of mines in given area is known to be some
-    /// specific value.
+    /// Creates a new [`Area`] with the given positions and a specific number of mines.
     ///
-    /// Following shows equivalence between this and `Area::new` function.
+    /// # Examples
     /// ```
     /// use mineraker::area::Area;
     ///
@@ -41,6 +41,20 @@ impl Area {
         }
     }
 
+    /// Calculates set difference between two [`Area`]s and returns area from `self` which is not
+    /// in `other`.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::collections::HashSet;
+    /// use mineraker::area::{Area, MineCount};
+    /// use mineraker::position::Position;
+    ///
+    /// let area1 = Area::with_definite_mine_count(HashSet::from([Position::new(0, 0), Position::new(1, 0)]), 2);
+    /// let area2 = Area::with_definite_mine_count(HashSet::from([Position::new(1, 0)]), 1);
+    ///
+    /// assert_eq!(area1.difference(&area2), Area::with_definite_mine_count(HashSet::from([Position::new(0, 0)]), 1));
+    /// ```
     pub fn difference(&self, other: &Self) -> Self {
         let diff: HashSet<Position> = self
             .positions
@@ -94,6 +108,7 @@ mod tests {
 
         assert_eq!(area1, area2);
     }
+
     #[test]
     fn area_difference_with_definite_mine_count() {
         let positions1 = HashSet::from([

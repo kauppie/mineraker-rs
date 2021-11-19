@@ -144,18 +144,16 @@ impl Board {
 
         Area::new(
             self.neighbors_tile_and_pos(pos)
-                .filter(|(_, tile)| tile.state() == State::Closed)
-                .map(|(p, _)| p)
+                .filter_map(|(p, tile)| tile.state().eq(&State::Closed).then(|| p))
                 .collect(),
-            match self.get_tile(pos) {
-                Some(tile) => match tile.value() {
-                    Value::Near(val) => {
-                        MineCount::new(val as usize - flags_around, val as usize - flags_around)
-                    }
-                    Value::Mine => MineCount::new(0, 8),
-                },
-                None => MineCount::new(0, 8),
-            },
+            self.get_tile(pos)
+                .and_then(|tile| {
+                    Some(match tile.value() {
+                        Value::Near(val) => MineCount::from_exact(val as usize - flags_around),
+                        Value::Mine => MineCount::from_range(0, 8),
+                    })
+                })
+                .unwrap_or(MineCount::from_range(0, 8)),
         )
     }
 

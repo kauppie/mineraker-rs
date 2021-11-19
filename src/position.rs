@@ -35,7 +35,7 @@ impl Position {
 
     /// Returns iterator over [`Position`]s neighbor [`Position`]s. Filters out positions which
     /// are outside given width and height bounds. Positions are returned in row-major order
-    /// starting lower bound of coordinates.
+    /// starting from lower bound of the coordinates.
     ///
     /// # Examples
     /// ```

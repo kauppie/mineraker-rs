@@ -33,6 +33,26 @@ impl Position {
         self.y * width + self.x
     }
 
+    /// Returns iterator over [`Position`]s neighbor [`Position`]s. Filters out positions which
+    /// are outside given width and height bounds. Positions are returned in row-major order
+    /// starting lower bound of coordinates.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::position::Position;
+    ///
+    /// // Position which is against the lower horizontal bound.
+    /// let position = Position::new(1, 0);
+    /// let neighbors: Vec<Position> = position.neighbors(8, 8).collect();
+    ///
+    /// assert_eq!(neighbors, [
+    ///     Position::new(0, 0),
+    ///     Position::new(2, 0),
+    ///     Position::new(0, 1),
+    ///     Position::new(1, 1),
+    ///     Position::new(2, 1),
+    /// ]);
+    /// ```
     pub fn neighbors(self, width: usize, height: usize) -> impl Iterator<Item = Self> {
         let (x, y) = (self.x, self.y);
         // Use wrapping_sub to wrap around to usize::MAX on zero values to always filter them out.
@@ -48,5 +68,22 @@ impl Position {
         ]
         .into_iter()
         .filter(move |pos| pos.x < width && pos.y < height)
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    /// Convert tuple with x and y coordinates into a position.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::position::Position;
+    ///
+    /// let pos1 = Position::new(1, 2);
+    /// let pos2 = Position::from((1, 2));
+    ///
+    /// assert_eq!(pos1, pos2);
+    /// ```
+    fn from(xy: (usize, usize)) -> Self {
+        Self { x: xy.0, y: xy.1 }
     }
 }

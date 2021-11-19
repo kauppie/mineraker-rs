@@ -40,10 +40,13 @@ pub struct Area {
 
 impl Area {
     /// Creates a new [`Area`] with the given positions and a mine count range.
-    pub fn new(positions: HashSet<Position>, mine_count: MineCount) -> Self {
+    pub fn new<T>(positions: HashSet<Position>, mine_count: T) -> Self
+    where
+        T: Into<MineCount>,
+    {
         Self {
             positions,
-            mine_count,
+            mine_count: mine_count.into(),
         }
     }
 
@@ -160,10 +163,7 @@ mod tests {
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(0..=1))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
         }
         {
             let area1 = Area::with_exact_mine_count(positions1.clone(), 2);
@@ -171,10 +171,7 @@ mod tests {
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(1..=2))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 1..=2));
         }
         {
             let area1 = Area::with_exact_mine_count(positions1.clone(), 3);
@@ -182,10 +179,7 @@ mod tests {
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(2..=2))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 2..=2));
         }
         {
             let area1 = Area::with_exact_mine_count(positions1.clone(), 1);
@@ -193,10 +187,7 @@ mod tests {
 
             let diff = area2.difference(&area1);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_2_positions.clone(), MineCount::from(0..=1))
-            );
+            assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
         }
         {
             let area1 = Area::with_exact_mine_count(positions1.clone(), 2);
@@ -204,10 +195,7 @@ mod tests {
 
             let diff = area2.difference(&area1);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_2_positions.clone(), MineCount::from(0..=1))
-            );
+            assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
         }
         {
             let area1 = Area::with_exact_mine_count(positions1.clone(), 3);
@@ -239,37 +227,28 @@ mod tests {
             positions1.difference(&positions2).cloned().collect();
 
         {
-            let area1 = Area::new(positions1.clone(), MineCount::from(0..=2));
-            let area2 = Area::new(positions2.clone(), MineCount::from(1..=2));
+            let area1 = Area::new(positions1.clone(), 0..=2);
+            let area2 = Area::new(positions2.clone(), 1..=2);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(0..=2))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=2));
         }
         {
-            let area1 = Area::new(positions1.clone(), MineCount::from(0..=1));
-            let area2 = Area::new(positions2.clone(), MineCount::from(0..=2));
+            let area1 = Area::new(positions1.clone(), 0..=1);
+            let area2 = Area::new(positions2.clone(), 0..=2);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(0..=1))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
         }
         {
-            let area1 = Area::new(positions1.clone(), MineCount::from(1..=3));
-            let area2 = Area::new(positions2.clone(), MineCount::from(0..=2));
+            let area1 = Area::new(positions1.clone(), 1..=3);
+            let area2 = Area::new(positions2.clone(), 0..=2);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_1_positions.clone(), MineCount::from(0..=2))
-            );
+            assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=2));
         }
 
         let positions3 = HashSet::from([
@@ -291,48 +270,36 @@ mod tests {
             positions3.difference(&positions4).cloned().collect();
 
         {
-            let area1 = Area::new(positions3.clone(), MineCount::from(1..=1));
-            let area2 = Area::new(positions4.clone(), MineCount::from(0..=1));
+            let area1 = Area::new(positions3.clone(), 1..=1);
+            let area2 = Area::new(positions4.clone(), 0..=1);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_3_positions.clone(), MineCount::from(0..=1))
-            );
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=1));
         }
         {
-            let area1 = Area::new(positions3.clone(), MineCount::from(1..=2));
-            let area2 = Area::new(positions4.clone(), MineCount::from(0..=1));
+            let area1 = Area::new(positions3.clone(), 1..=2);
+            let area2 = Area::new(positions4.clone(), 0..=1);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_3_positions.clone(), MineCount::from(0..=2))
-            );
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=2));
         }
         {
-            let area1 = Area::new(positions3.clone(), MineCount::from(2..=3));
-            let area2 = Area::new(positions4.clone(), MineCount::from(0..=1));
+            let area1 = Area::new(positions3.clone(), 2..=3);
+            let area2 = Area::new(positions4.clone(), 0..=1);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_3_positions.clone(), MineCount::from(1..=3))
-            );
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 1..=3));
         }
         {
-            let area1 = Area::new(positions3.clone(), MineCount::from(2..=3));
-            let area2 = Area::new(positions4.clone(), MineCount::from(1..=2));
+            let area1 = Area::new(positions3.clone(), 2..=3);
+            let area2 = Area::new(positions4.clone(), 1..=2);
 
             let diff = area1.difference(&area2);
 
-            assert_eq!(
-                diff,
-                Area::new(diff_3_positions.clone(), MineCount::from(0..=2))
-            );
+            assert_eq!(diff, Area::new(diff_3_positions.clone(), 0..=2));
         }
     }
 }

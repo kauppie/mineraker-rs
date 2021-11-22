@@ -31,6 +31,12 @@ impl From<RangeInclusive<usize>> for MineCount {
     }
 }
 
+impl From<usize> for MineCount {
+    fn from(exact: usize) -> Self {
+        Self::from_exact(exact)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Area {
     positions: HashSet<Position>,
@@ -39,7 +45,29 @@ pub struct Area {
 }
 
 impl Area {
-    /// Creates a new [`Area`] with the given positions and a mine count range.
+    /// Creates a new [`Area`] with the given positions and mine count.
+    ///
+    /// # Examples
+    ///
+    /// Some possible values for `mine_count`:
+    /// ```
+    /// use mineraker::area::{Area, MineCount};
+    /// use mineraker::position::Position;
+    ///
+    /// let positions = [
+    ///     Position::new(4, 4),
+    ///     Position::new(5, 5),
+    /// ];
+    ///
+    /// // Mine count as single integer.
+    /// let area = Area::new(positions.into(), 1);
+    ///
+    /// // Mine count as range with integers.
+    /// let area2 = Area::new(positions.into(), 1..=2);
+    ///
+    /// // Mine count via `MineCount` construct function.
+    /// let area3 = Area::new(positions.into(), MineCount::from_range(0, 2));
+    /// ```
     pub fn new<T>(positions: HashSet<Position>, mine_count: T) -> Self
     where
         T: Into<MineCount>,
@@ -47,24 +75,6 @@ impl Area {
         Self {
             positions,
             mine_count: mine_count.into(),
-        }
-    }
-
-    /// Creates a new [`Area`] with the given positions and a specific number of mines.
-    ///
-    /// # Examples
-    /// ```
-    /// use mineraker::area::{Area, MineCount};
-    ///
-    /// let area1 = Area::with_exact_mine_count(Default::default(), 5);
-    /// let area2 = Area::new(Default::default(), MineCount::from_exact(5));
-    ///
-    /// assert_eq!(area1, area2);
-    /// ```
-    pub fn with_exact_mine_count(positions: HashSet<Position>, exact_mine_count: usize) -> Self {
-        Self {
-            positions,
-            mine_count: MineCount::from_exact(exact_mine_count),
         }
     }
 
@@ -77,10 +87,10 @@ impl Area {
     /// use mineraker::area::{Area, MineCount};
     /// use mineraker::position::Position;
     ///
-    /// let area1 = Area::with_exact_mine_count(HashSet::from([Position::new(0, 0), Position::new(1, 0)]), 2);
-    /// let area2 = Area::with_exact_mine_count(HashSet::from([Position::new(1, 0)]), 1);
+    /// let area1 = Area::new(HashSet::from([Position::new(0, 0), Position::new(1, 0)]), 2);
+    /// let area2 = Area::new(HashSet::from([Position::new(1, 0)]), 1);
     ///
-    /// assert_eq!(area1.difference(&area2), Area::with_exact_mine_count(HashSet::from([Position::new(0, 0)]), 1));
+    /// assert_eq!(area1.difference(&area2), Area::new(HashSet::from([Position::new(0, 0)]), 1));
     /// ```
     pub fn difference(&self, other: &Self) -> Self {
         let diff: HashSet<Position> = self
@@ -134,7 +144,7 @@ mod tests {
     #[test]
     fn area_creation_equivalence() {
         let area1 = Area::new(Default::default(), MineCount::from_exact(1));
-        let area2 = Area::with_exact_mine_count(Default::default(), 1);
+        let area2 = Area::new(Default::default(), 1);
 
         assert_eq!(area1, area2);
     }
@@ -158,48 +168,48 @@ mod tests {
             positions2.difference(&positions1).cloned().collect();
 
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 1);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 1);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area1.difference(&area2);
 
             assert_eq!(diff, Area::new(diff_1_positions.clone(), 0..=1));
         }
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 2);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 2);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area1.difference(&area2);
 
             assert_eq!(diff, Area::new(diff_1_positions.clone(), 1..=2));
         }
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 3);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 3);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area1.difference(&area2);
 
             assert_eq!(diff, Area::new(diff_1_positions.clone(), 2..=2));
         }
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 1);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 1);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area2.difference(&area1);
 
             assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
         }
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 2);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 2);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area2.difference(&area1);
 
             assert_eq!(diff, Area::new(diff_2_positions.clone(), 0..=1));
         }
         {
-            let area1 = Area::with_exact_mine_count(positions1.clone(), 3);
-            let area2 = Area::with_exact_mine_count(positions2.clone(), 1);
+            let area1 = Area::new(positions1.clone(), 3);
+            let area2 = Area::new(positions2.clone(), 1);
 
             let diff = area2.difference(&area1);
 

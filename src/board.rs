@@ -129,13 +129,18 @@ impl Board {
         }
     }
 
+    #[inline]
     pub fn flag_from(&mut self, pos: Position) {
         if let Some(tile) = self.get_tile_mut(pos) {
             tile.toggle_flag();
         }
     }
 
-    /// Returns tile's not opened neighbor tiles as [`Area`].
+    /// Returns tile's closed neighbor tiles as [`Area`] with mine count calculated from
+    /// the tile's [`Value`]. If mine count is not possible to calculate, (e.g. position is
+    /// out of bounds or tile at position is a mine) returns mine count as `0..=8`.
+    ///
+    /// TODO: Add example.
     fn tile_neighbors_area(&self, pos: Position) -> Area {
         let flags_around = self
             .neighbors_tile_and_pos(pos)
@@ -149,11 +154,11 @@ impl Board {
             self.get_tile(pos)
                 .and_then(|tile| {
                     Some(match tile.value() {
-                        Value::Near(val) => MineCount::from_exact(val as usize - flags_around),
-                        Value::Mine => MineCount::from_range(0, 8),
+                        Value::Near(val) => MineCount::from(val as usize - flags_around),
+                        Value::Mine => MineCount::from(0..=8),
                     })
                 })
-                .unwrap_or(MineCount::from_range(0, 8)),
+                .unwrap_or(MineCount::from(0..=8)),
         )
     }
 
@@ -175,7 +180,6 @@ impl Board {
     }
 
     #[inline]
-    #[allow(dead_code)]
     pub fn width(&self) -> usize {
         self.width
     }

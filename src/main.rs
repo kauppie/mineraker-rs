@@ -18,6 +18,12 @@ use crate::{
 /// * Locally undeducable mine positions are stored and can be compared by
 ///   other tiles.
 /// * Efficient algorithms using mainly iterators.
+///
+/// * Create [`Board`]s using builder pattern as [`Board`] is current version of it
+/// is built once and then played.
+/// ?? How would play-time generated board fit into this?
+///
+/// Move logic components into their own crates.
 
 fn main() {
     let mut board = Board::new(&GenerationConfig {

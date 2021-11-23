@@ -31,6 +31,7 @@ impl MineCount {
     /// use mineraker::area::MineCount;
     ///
     /// assert_eq!(MineCount::from_exact(3).exact_count(), Some(3));
+    /// assert_eq!(MineCount::from_range(1, 1).exact_count(), Some(1));
     /// assert_eq!(MineCount::from_range(1, 2).exact_count(), None);
     /// ```
     #[inline]

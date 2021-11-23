@@ -23,6 +23,25 @@ impl MineCount {
     pub fn max(&self) -> usize {
         *self.0.end()
     }
+
+    /// Returns the exact number of mines if min and max are equal.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::area::MineCount;
+    ///
+    /// assert_eq!(MineCount::from_exact(3).exact_count(), Some(3));
+    /// assert_eq!(MineCount::from_range(1, 2).exact_count(), None);
+    /// ```
+    #[inline]
+    pub fn exact_count(&self) -> Option<usize> {
+        let min = self.min();
+        if min == self.max() {
+            Some(min)
+        } else {
+            None
+        }
+    }
 }
 
 impl From<RangeInclusive<usize>> for MineCount {
@@ -35,6 +54,14 @@ impl From<usize> for MineCount {
     fn from(exact: usize) -> Self {
         Self::from_exact(exact)
     }
+}
+
+/// Stores available action for [`Area`]. Some [`Area`]s do not
+/// have available actions.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AreaAction {
+    Open,
+    Flag,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,6 +156,37 @@ impl Area {
             positions: diff,
             mine_count: MineCount::from_range(min, max),
         }
+    }
+
+    /// Returns the next possible action for [`Area`] if one exists.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::collections::HashSet;
+    /// use mineraker::area::{Area, AreaAction};
+    /// use mineraker::position::Position;
+    ///
+    /// let positions = HashSet::from([
+    ///     Position::new(1, 0),
+    ///     Position::new(2, 0),
+    ///     Position::new(3, 0),
+    /// ]);
+    ///
+    /// let area = Area::new(positions.clone(), 0);
+    /// assert_eq!(area.next_action(), Some(AreaAction::Open));
+    /// let area2 = Area::new(positions.clone(), 3);
+    /// assert_eq!(area2.next_action(), Some(AreaAction::Flag));
+    /// let area3 = Area::new(positions.clone(), 1);
+    /// assert_eq!(area3.next_action(), None);
+    /// let area4 = Area::new(positions.clone(), 1..=3);
+    /// assert_eq!(area4.next_action(), None);
+    /// ```
+    pub fn next_action(&self) -> Option<AreaAction> {
+        self.mine_count.exact_count().and_then(|count| match count {
+            0 => Some(AreaAction::Open),
+            _ if count == self.positions.len() => Some(AreaAction::Flag),
+            _ => None,
+        })
     }
 }
 

@@ -24,6 +24,10 @@ use crate::{
 /// ?? How would play-time generated board fit into this?
 ///
 /// Move logic components into their own crates.
+///
+/// If Area::next_action produces `None`, then Area itself is unusable.
+/// Area has to be used with other areas.
+/// TODO: How to determine these areas?
 
 fn main() {
     let mut board = Board::new(&GenerationConfig {

@@ -76,8 +76,6 @@ impl Area {
     /// Creates a new [`Area`] with the given positions and mine count.
     ///
     /// # Examples
-    ///
-    /// Some possible values for `mine_count`:
     /// ```
     /// use mineraker::area::{Area, MineCount};
     /// use mineraker::position::Position;
@@ -193,7 +191,6 @@ impl Area {
 
 #[cfg(test)]
 mod tests {
-
     use crate::{
         area::{Area, MineCount},
         position::Position,

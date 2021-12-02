@@ -150,13 +150,11 @@ impl Board {
                 .filter_map(|(p, tile)| tile.state().eq(&State::Closed).then(|| p))
                 .collect(),
             self.get_tile(pos)
-                .and_then(|tile| {
-                    Some(match tile.value() {
-                        Value::Near(val) => MineCount::from(val as usize - flags_around),
-                        Value::Mine => MineCount::from(0..=8),
-                    })
+                .map(|tile| match tile.value() {
+                    Value::Near(val) => MineCount::from(val as usize - flags_around),
+                    Value::Mine => MineCount::from(0..=8),
                 })
-                .unwrap_or(MineCount::from(0..=8)),
+                .unwrap_or_else(|| MineCount::from(0..=8)),
         )
     }
 

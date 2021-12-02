@@ -5,6 +5,11 @@ pub struct Tile {
 }
 
 impl Tile {
+    pub const EMPTY_CLOSED: Self = Self {
+        value: Value::Near(0),
+        state: State::Closed,
+    };
+
     pub fn new(value: Value, state: State) -> Self {
         Self { value, state }
     }
@@ -47,12 +52,12 @@ impl Tile {
     }
 
     #[inline]
-    pub fn value(self) -> Value {
+    pub fn value(&self) -> Value {
         self.value
     }
 
     #[inline]
-    pub fn state(self) -> State {
+    pub fn state(&self) -> State {
         self.state
     }
 }

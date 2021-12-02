@@ -96,9 +96,7 @@ impl Board {
 
             stack.extend(p.neighbors(self.width, self.height()).filter(|p| {
                 let i = p.to_index(self.width);
-                !processed[i]
-                    && self.tiles[i].value() == Value::Near(0)
-                    && self.tiles[i].state() == State::Closed
+                !processed[i] && self.tiles[i] == Tile::EMPTY_CLOSED
             }));
         }
 

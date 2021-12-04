@@ -24,7 +24,7 @@ impl MineCount {
         *self.0.end()
     }
 
-    /// Returns the exact number of mines if min and max are equal.
+    /// Returns the exact number of mines if min and max are equal, [`None`] otherwise.
     ///
     /// # Examples
     /// ```

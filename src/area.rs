@@ -119,7 +119,7 @@ impl Area {
     /// assert_eq!(area1.difference(&area2), Area::new(HashSet::from([Position::new(0, 0)]), 1));
     /// ```
     pub fn difference(&self, other: &Self) -> Self {
-        let diff: HashSet<Position> = self
+        let diff: HashSet<_> = self
             .positions
             .difference(&other.positions)
             .cloned()
@@ -144,7 +144,7 @@ impl Area {
             let other_mines_overflow_to_intersection =
                 other.mine_count.min().saturating_sub(other_diff_size);
 
-            // Substraction can't underflow as `self.mine_count.max()` contains
+            // Substraction can't underflow as `self.mine_count.max()` includes
             // mines that could possibly be in the intersection area and therefore
             // it is always greater or equal to mines in the intersection.
             diff.len()

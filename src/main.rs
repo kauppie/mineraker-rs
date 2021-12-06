@@ -4,7 +4,7 @@ mod position;
 mod tile;
 
 use crate::{
-    board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig},
+    board::{Board, GenerationSettings, Seed},
     position::Position,
 };
 
@@ -30,8 +30,8 @@ use crate::{
 /// TODO: How to determine these areas?
 
 fn main() {
-    let mut board = Board::new(&GenerationConfig {
-        seed: BoardSeed::from_u128(0),
+    let mut board = Board::new(&GenerationSettings {
+        seed: Seed::new(0),
         width: 30,
         height: 16,
         mine_count: 99,

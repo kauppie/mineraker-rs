@@ -16,7 +16,7 @@ impl Seed {
     /// Returns the seed as [`u128`]. As the seed is internally only [`u64`],
     /// this function fills the most significant 64 bits of the returned value.
     #[inline]
-    pub fn to_u128(&self) -> u128 {
+    pub fn to_u128(self) -> u128 {
         u128::from(self.0) << 64
     }
 }

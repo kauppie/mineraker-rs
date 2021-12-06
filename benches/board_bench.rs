@@ -1,15 +1,15 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use mineraker::{
-    board::{Board, BoardGenSeeder, BoardSeed, GenerationConfig},
+    board::{Board, GenerationSettings, Seed},
     position::Position,
 };
 
 pub fn bench_generate_small_board(c: &mut Criterion) {
     c.bench_function("Generate small board", |b| {
         b.iter(|| {
-            black_box(Board::new(&GenerationConfig {
-                seed: BoardSeed::from_u128(0),
+            black_box(Board::new(&GenerationSettings {
+                seed: Seed::new(0),
                 width: 8,
                 height: 8,
                 mine_count: 10,
@@ -22,8 +22,8 @@ pub fn bench_generate_small_board(c: &mut Criterion) {
 pub fn bench_generate_large_board(c: &mut Criterion) {
     c.bench_function("Generate large board", |b| {
         b.iter(|| {
-            black_box(Board::new(&GenerationConfig {
-                seed: BoardSeed::from_u128(0),
+            black_box(Board::new(&GenerationSettings {
+                seed: Seed::new(0),
                 width: 30,
                 height: 16,
                 mine_count: 170,
@@ -36,8 +36,8 @@ pub fn bench_generate_large_board(c: &mut Criterion) {
 pub fn bench_cascade_open(c: &mut Criterion) {
     c.bench_function("Cascade open", |b| {
         b.iter(|| {
-            let mut board = Board::new(&GenerationConfig {
-                seed: BoardSeed::from_u128(0),
+            let mut board = Board::new(&GenerationSettings {
+                seed: Seed::new(0),
                 width: 30,
                 height: 16,
                 mine_count: 99,

@@ -140,13 +140,13 @@ impl Area {
             // Can't underflow as intersection is always equal to or smaller than
             // the area that forms it.
             let other_diff_size = other.positions.len() - intersection_size;
-            // Use `saturating_sub` to limit value to zero with unsigned integers.
+            // Use `saturating_sub` to emulate calcuting max between result and 0.
             let other_mines_overflow_to_intersection =
                 other.mine_count.min().saturating_sub(other_diff_size);
 
             // Substraction can't underflow as `self.mine_count.max()` includes
             // mines that could possibly be in the intersection area and therefore
-            // it is always greater or equal to mines in the intersection.
+            // it is always greater or equal to mine count in the intersection.
             diff.len()
                 .min(self.mine_count.max() - other_mines_overflow_to_intersection)
         };

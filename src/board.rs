@@ -1,5 +1,3 @@
-use std::{collections::hash_map::DefaultHasher, hash::Hash};
-
 use crate::{
     area::{Area, MineCount},
     position::Position,

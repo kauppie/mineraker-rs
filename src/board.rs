@@ -1,3 +1,5 @@
+use std::{collections::hash_map::DefaultHasher, hash::Hash};
+
 use crate::{
     area::{Area, MineCount},
     position::Position,
@@ -13,11 +15,18 @@ impl Seed {
         Self(seed)
     }
 
-    /// Returns the seed as [`u128`]. As the seed is internally only [`u64`],
-    /// this function fills the most significant 64 bits of the returned value.
+    /// Return itself as [`u64`].
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::board::Seed;
+    ///
+    /// let seed = Seed::new(42);
+    /// assert_eq!(seed.get(), 42);
+    /// ```
     #[inline]
-    pub fn to_u128(self) -> u128 {
-        u128::from(self.0) << 64
+    pub fn get(self) -> u64 {
+        self.0
     }
 }
 
@@ -32,6 +41,32 @@ pub struct GenerationSettings {
     pub mine_count: usize,
     // TODO: use start_pos in board generation.
     pub start_pos: Position,
+}
+
+impl GenerationSettings {
+    /// Converts [`GenerationSettings`] to seed.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::board::{GenerationSettings, Seed};
+    ///
+    /// let gs = GenerationSettings {
+    ///     seed: Seed::new(42),
+    ///     width: 8,
+    ///     height: 8,
+    ///     mine_count: 10,
+    ///     start_pos: (5, 5).into(),
+    /// };
+    /// assert_eq!(gs.to_state_seed(), 774763251130295452938);
+    /// ```
+    pub fn to_state_seed(&self) -> u128 {
+        ((self.seed.get() as u128) << 64)
+            ^ (self.width as u128) << 32
+            ^ (self.height as u128) << 24
+            ^ (self.start_pos.x as u128) << 16
+            ^ (self.start_pos.y as u128) << 8
+            ^ (self.mine_count as u128)
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -53,7 +88,7 @@ impl Board {
         );
 
         // Generate mine indexes using config seed.
-        let mut rng = rand_pcg::Pcg64Mcg::new(settings.seed.to_u128());
+        let mut rng = rand_pcg::Pcg64Mcg::new(settings.to_state_seed());
         let mine_idxs = rand::seq::index::sample(&mut rng, size, settings.mine_count);
 
         // Setup empty board with the final size.

@@ -8,9 +8,6 @@ use crate::{
     position::Position,
 };
 
-/// * Fix board generation to be unique for all seeds.
-///   LSB of the seed doesn't currently have any effect on the generation.
-/// * Use width and height when seeding board generation.
 /// * Determine the requirements for board solving.
 ///
 /// * Opening and flagging tiles.

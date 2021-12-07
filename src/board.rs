@@ -59,7 +59,7 @@ impl GenerationSettings {
     /// };
     /// assert_eq!(gs.to_state_seed(), 774763251130295452938);
     /// ```
-    pub fn to_state_seed(&self) -> u128 {
+    pub fn to_state_seed(self) -> u128 {
         ((self.seed.get() as u128) << 64)
             ^ (self.width as u128) << 32
             ^ (self.height as u128) << 24

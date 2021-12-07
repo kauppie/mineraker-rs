@@ -35,7 +35,7 @@ fn main() {
         start_pos: Position::default(),
     });
 
-    board.open_from(Position { x: 15, y: 5 });
+    board.open_from(Position { x: 16, y: 13 });
 
     println!("{}", board);
 }

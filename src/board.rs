@@ -119,16 +119,18 @@ impl Board {
     fn empty_area(&self, pos: Position) -> Vec<Position> {
         let mut stack = Vec::new();
         let mut emptys = Vec::new();
-        let mut processed = vec![false; self.width * self.height()];
+        let mut processed = vec![false; self.tiles.len()];
 
         stack.push(pos);
         while let Some(p) = stack.pop() {
-            processed[p.to_index(self.width)] = true;
             emptys.push(p);
 
             stack.extend(p.neighbors(self.width, self.height()).filter(|p| {
                 let i = p.to_index(self.width);
-                !processed[i] && self.tiles[i] == Tile::EMPTY_CLOSED
+                let unprocessed = !processed[i] && self.tiles[i] == Tile::EMPTY_CLOSED;
+                processed[i] = true;
+
+                unprocessed
             }));
         }
 

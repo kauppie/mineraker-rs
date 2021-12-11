@@ -94,10 +94,7 @@ impl Area {
     /// // Mine count via `MineCount` construct function.
     /// let area3 = Area::new(positions.into(), MineCount::from_range(0, 2));
     /// ```
-    pub fn new<T>(positions: HashSet<Position>, mine_count: T) -> Self
-    where
-        T: Into<MineCount>,
-    {
+    pub fn new(positions: HashSet<Position>, mine_count: impl Into<MineCount>) -> Self {
         Self {
             positions,
             mine_count: mine_count.into(),

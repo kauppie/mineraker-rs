@@ -159,7 +159,7 @@ impl Area {
     /// # Examples
     /// ```
     /// use std::collections::HashSet;
-    /// use mineraker::area::{Area, AreaAction};
+    /// use mineraker::area::{Area, Action};
     /// use mineraker::position::Position;
     ///
     /// let positions = HashSet::from([
@@ -169,9 +169,9 @@ impl Area {
     /// ]);
     ///
     /// let area = Area::new(positions.clone(), 0);
-    /// assert_eq!(area.next_action(), Some(AreaAction::Open));
+    /// assert_eq!(area.next_action(), Some(Action::Open));
     /// let area2 = Area::new(positions.clone(), 3);
-    /// assert_eq!(area2.next_action(), Some(AreaAction::Flag));
+    /// assert_eq!(area2.next_action(), Some(Action::Flag));
     /// let area3 = Area::new(positions.clone(), 1);
     /// assert_eq!(area3.next_action(), None);
     /// let area4 = Area::new(positions.clone(), 1..=3);

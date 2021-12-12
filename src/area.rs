@@ -60,7 +60,7 @@ impl From<usize> for MineCount {
 /// Stores available action for [`Area`]. Some [`Area`]s do not
 /// have available actions.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AreaAction {
+pub enum Action {
     Open,
     Flag,
 }
@@ -177,10 +177,10 @@ impl Area {
     /// let area4 = Area::new(positions.clone(), 1..=3);
     /// assert_eq!(area4.next_action(), None);
     /// ```
-    pub fn next_action(&self) -> Option<AreaAction> {
+    pub fn next_action(&self) -> Option<Action> {
         self.mine_count.exact_count().and_then(|count| match count {
-            0 => Some(AreaAction::Open),
-            _ if count == self.positions.len() => Some(AreaAction::Flag),
+            0 => Some(Action::Open),
+            _ if count == self.positions.len() => Some(Action::Flag),
             _ => None,
         })
     }

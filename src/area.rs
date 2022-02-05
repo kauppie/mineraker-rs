@@ -2,26 +2,55 @@ use std::{collections::HashSet, ops::RangeInclusive};
 
 use crate::position::Position;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MineCount(RangeInclusive<usize>);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MineCount {
+    min: usize,
+    max: usize,
+}
 
 impl MineCount {
+    /// Create a [`MineCount`] which represents exact mine count instead of a range.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::area::MineCount;
+    ///
+    /// let mine_count = MineCount::from_exact(3);
+    ///
+    /// assert_eq!(mine_count.min(), mine_count.max());
+    /// ```
     pub fn from_exact(exact: usize) -> Self {
-        Self(exact..=exact)
+        Self {
+            min: exact,
+            max: exact,
+        }
     }
 
+    /// Create a [`MineCount`] which has minimum and maximum range for a mine count.
+    ///
+    /// # Examples
+    /// ```
+    /// use mineraker::area::MineCount;
+    ///
+    /// let mine_count = MineCount::from_range(1, 3);
+    ///
+    /// assert_eq!(mine_count.min(), 1);
+    /// assert_eq!(mine_count.max(), 3);
+    /// ```
     pub fn from_range(min: usize, max: usize) -> Self {
-        Self(min..=max)
+        Self { min, max }
     }
 
+    /// Returns the minimum mine count.
     #[inline]
     pub fn min(&self) -> usize {
-        *self.0.start()
+        self.min
     }
 
+    /// Returns the maximum mine count.
     #[inline]
     pub fn max(&self) -> usize {
-        *self.0.end()
+        self.max
     }
 
     /// Returns the exact number of mines if min and max are equal, [`None`] otherwise.
@@ -36,9 +65,8 @@ impl MineCount {
     /// ```
     #[inline]
     pub fn exact_count(&self) -> Option<usize> {
-        let min = self.min();
-        if min == self.max() {
-            Some(min)
+        if self.min == self.max {
+            Some(self.min)
         } else {
             None
         }
@@ -47,7 +75,10 @@ impl MineCount {
 
 impl From<RangeInclusive<usize>> for MineCount {
     fn from(ri: RangeInclusive<usize>) -> Self {
-        Self(ri)
+        Self {
+            min: *ri.start(),
+            max: *ri.end(),
+        }
     }
 }
 
@@ -99,6 +130,10 @@ impl Area {
             positions,
             mine_count: mine_count.into(),
         }
+    }
+
+    pub fn positions(&self) -> &HashSet<Position> {
+        &self.positions
     }
 
     /// Calculates set difference between two [`Area`]s and returns area from `self` which is not
